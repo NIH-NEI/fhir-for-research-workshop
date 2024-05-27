@@ -1,0 +1,16 @@
+@startuml
+participant "**EHR Launch Simulator**\nlocalhost:8010" as B
+participant "**CDS App Launch Page**\nlocalhost:3000/launch.html" as A
+participant "**CDS UI**\nlocalhost:3000/index.html" as C
+participant "**FHIR Server**\nlocalhost:8080" as D
+
+B -> B: Launch triggered via EHR launch simulator website
+B -> A: User redirected to launch page
+A -> B: Log-in request (authentication)
+B -> B: EHR simulator: select encounter
+B -> C: Log-in completed
+C -> B: Access token request (defines permissions/authorization)
+B --> C: Access token response
+C -> D: Request Patient
+D --> C: Response with Patient JSON
+@enduml

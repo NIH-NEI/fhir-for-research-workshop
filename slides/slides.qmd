@@ -1,0 +1,689 @@
+---
+format:
+  revealjs:
+    theme: [default, slides.scss]
+    preview-links: true
+    slide-number: c/t
+    footer: "© 2024 The MITRE Corporation / Approved for Public Release / Case #24-0169"
+editor: visual
+---
+
+# SMART on FHIR<sup>®</sup> for Eye Health Research Workshop {background-color="#20558a"}
+
+National Eye Institute, Office of Data Science and Health Informatics
+
+May 30, 2024 <br><br><br>
+
+<small>FHIR® is the registered trademark of Health Level Seven International (HL7). Use of the FHIR trademark does not constitute an HL7 endorsement of this workshop.<br><br> © 2024 The MITRE Corporation / Approved for Public Release / Case #24-0169</small>
+
+## Workshop Overview
+
+::: incremental
+-   Today's use case: creating a novel clinical decision support (CDS) tool for ophthalmology that integrates into an electronic health record (EHR) workflow
+
+-   We will identify and work hands-on with the parts of the FHIR ecosystem that support this use case
+
+-   Workshop content is organized from least-to-most technical
+
+    -   No prior FHIR experience or other technical skills\* are needed
+
+    -   \*Except for at the very end of the workshop: we will be working hands-on with Python
+:::
+
+## Logistics
+
+::: incremental
+-   Workshop "homepage": [https://github.com/NIH-NEI/fhir-for-research-workshop/](https://github.com/NIH-NEI/fhir-for-research-workshop/){preview-link="false"}
+-   Contacting us after the workshop: `neiodshi@nei.nih.gov`
+-   There is a survey! <https://forms.office.com/g/pBhCxFxtpw>
+:::
+
+## Agenda
+
+::: r-fit-text
+**Part 1: Overview of...**
+
+1.  FHIR
+2.  SMART on FHIR
+3.  Example clinical decision support system architecture
+
+**Part 2: Deep dive into...**
+
+1.  Example clinical decision support system
+2.  SMART on FHIR log-in and permissions (authentication and authorization) workflow
+3.  Reading the FHIR specification and FHIR IGs
+
+**Part 3: Hands-on with...**
+
+1.  FHIR API
+2.  FHIRPath
+3.  Python code to access FHIR data
+:::
+
+# 1.1 FHIR Overview {#introduction}
+
+::: notes
+We will start with a high level overview of FHIR and flag the relevant parts of the FHIR ecosystem for this use case.
+:::
+
+## What is FHIR?
+
+FHIR stands for:
+
+-   Fast (to design & implement)
+-   Healthcare
+-   Interoperability
+-   Resources (aka building blocks)
+
+FHIR® is a standard for exchanging health information electronically.
+
+Standards establish a common language and process for all health information technology (IT) systems to communicate, allowing information to be shared seamlessly and efficiently.
+
+## Real world examples of FHIR
+
+-   [Apple Health](https://www.apple.com/healthcare/health-records/) and patient portals
+-   [SMART Health Cards](https://smarthealth.cards/en/)
+-   [Health information exchange networks](https://www.aha.org/news/headline/2024-04-22-onc-requires-health-information-exchange-networks-support-fhir-standard) under TEFCA
+
+## What characteristics of FHIR support its broad implementation?
+
+-   **Free:** It is an open, free-to-use standard.
+-   **Modular:** "Resources" are used to build solutions from compatible components.
+-   **Customizable:** Developers and implementers can use extensions and profiling to meet specific needs.
+
+## What do you get with FHIR?
+
+::: r-fit-text
+-   The FHIR specification: [https://hl7.org/fhir/](https://hl7.org/fhir/){preview-link="false"}
+
+    -   Common data format, typically [JSON](https://www.hl7.org/fhir/us/core/Patient-example.json.html) or [XML](https://www.hl7.org/fhir/us/core/Patient-example.xml.html)
+
+    -   Standard data elements grouped into "[resources](https://www.hl7.org/fhir/resourcelist.html){preview-link="false"}"
+
+    -   [Standard API](https://www.hl7.org/fhir/http.html)
+
+-   [Software libraries](https://confluence.hl7.org/display/FHIR/Open+Source+Implementations)
+
+-   [HL7](https://hl7.org) and the FHIR Community (e.g., [chat.fhir.org](https://chat.fhir.org))
+
+    -   More: <http://purl.org/fhir-for-research/community>
+
+-   Customization via FHIR implementation guides (e.g., [US Core](https://www.hl7.org/fhir/us/core/){preview-link="false"}; [others](http://fhir.org/guides/registry/))
+
+    -   The base FHIR specification is typically too general to support a specific use case; FHIR IGs allow for use case-specific customization and extension
+:::
+
+## FHIR system architecture
+
+![Diagram of typical FHIR system architecture.](assets/fhir_diagram.svg)
+
+::: notes
+Our ophthalmology CDS use case fits into this architecture: we have two different FHIR clients working together that talk to a FHIR server.
+:::
+
+## FHIR's RESTful API
+
+-   Provides a uniform interface between FHIR-enabled systems that allows them to talk to each other
+
+-   REST = [representational state transfer](https://en.wikipedia.org/wiki/REST)
+
+-   Practically, allows you to construct a URL like [`http://hapi.fhir.org/baseR4/Patient/44728118`](http://hapi.fhir.org/baseR4/Patient/44728118){preview-link="false"} to retrieve specific information
+
+    -   Base: `http://hapi.fhir.org/baseR4`
+
+    -   Resource: `Patient`
+
+    -   Id: `44728118`
+
+## FHIR's RESTful API, continued
+
+-   More complex retrieval is possible via the FHIR API:
+
+    -   Get a patient with a specific MRN: [`http://hapi.fhir.org/baseR4/Patient/?identifier=68519946`](http://hapi.fhir.org/baseR4/Patient/?identifier=68519946){preview-link="false"}
+
+    -   Get all patients who have a specific kind of observation: [`http://hapi.fhir.org/baseR4/Patient/?_has:Observation:subject:code=41633001`](http://hapi.fhir.org/baseR4/Patient/?_has:Observation:subject:code=41633001){preview-link="false"}
+
+-   Sending data, updating data, etc. have similar standardized interfaces
+
+    -   Custom interfaces can be created with FHIR IGs
+
+## FHIR's RESTful API, continued
+
+-   **Why is the FHIR API important for our ophthalmology CDS use case?\
+    **The same interfaces work across "all" FHIR servers, allowing for software portability.
+
+# 1.2 SMART on FHIR Overview
+
+## What is SMART on FHIR?
+
+> The goal of the original SMART on FHIR API is audacious and can be expressed concisely: an innovative app developer can write an app once and expect that it will run anywhere in the health care system.
+>
+> ...
+>
+> SMART provides a full stack of open specifications that enable a medical apps platform.
+
+--- <https://smarthealthit.org/smart-on-fhir-api/>
+
+## What is SMART on FHIR?
+
+-   SMART stands for "Substitutable Medical Apps, Reusable Technology", a standard by the [SMART Health IT](https://smarthealthit.org/) group
+
+-   Based on open standards: FHIR, OAuth2, OpenID Connect
+
+-   Widely implemented/used (e.g., used on [all iPhones](https://www.apple.com/healthcare/health-records/) for connecting to patient portals)
+
+-   Required as part of ONC certification for 21^st^ Century Cures Act: [§170.315(g)(10) Standardized API for patient and population services](https://www.healthit.gov/test-method/standardized-api-patient-and-population-services)
+
+    -   [§ 170.215(a)(4)](https://www.law.cornell.edu/cfr/text/45/170.215) lists the specific APIs including SMART Application Launch
+
+::: notes
+-   45 CFR 170.315(g)(10) is:
+    -   In Title 45 of the Code of Federal Regulations
+    -   Part 170, Section 315, Paragraph 170.315(g)(10)
+    -   [More information on how the CFR is structured](https://www.archives.gov/files/federal-register/tutorial/tutorial_060.pdf)
+    -   Text of the CFR: <https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-C/section-170.315#p-170.315(g)(10)>
+:::
+
+## How can SMART on FHIR help research?
+
+SMART on FHIR lets you:
+
+-   Integrate with an EHR (e.g., add an AI-driven CDS app)
+-   Add patient-generated data to an EHR workflow
+-   Create an app that can be used across institutions and EHR products ("write once, use everywhere")
+-   Access [Bulk Data](../bulk-data/index.html)
+
+## SMART on FHIR standards
+
+It ties together existing common web standards and HL7 specifications to enable secure EHR integration:
+
+-   OAuth2 for authorizing a third-party app ("logging in")
+-   OpenID Connect for authenticating a patient or provider ("permissions")
+-   HL7 FHIR for data modeling and API
+-   JSON for the data format
+-   [HL7.FHIR.UV.SMART-APP-LAUNCH](http://hl7.org/fhir/smart-app-launch/) standard for launching from EHR
+-   [HL7 CDS Hooks](https://cds-hooks.hl7.org) for triggering based on EHR actions (see next slide)
+
+## Aside: CDS Hooks
+
+-   CDS Hooks is an HL7 standard that can support SMART on FHIR application integration with EHRs
+-   They allow an action in an EHR to trigger an action in a third-party application
+-   For example, a [`patient-view`](https://cds-hooks.org/hooks/patient-view/) hook is triggered when the patient record is opened, which could then call natural language processing software
+
+## Technical considerations
+
+#### SMART apps have multiple authorization patterns
+
+-   SMART App Launch
+    -   EHR Launch: user launches an application from within an EHR (ex: a CDS app)
+    -   Standalone Launch: user launches the application directly (ex: iPhone Health app)
+-   SMART Backend Service: support applications that run autonomously (ex: data pipeline)
+
+## Technical considerations, continued
+
+#### Security
+
+-   Use reputable open-source software libraries to save development time and avoid common security pitfalls. [SMART Health IT](http://docs.smarthealthit.org/) lists SMART-on-FHIR software libraries.
+
+#### Privacy
+
+-   FHIR servers will likely return sensitive healthcare data. PHI rules will likely apply. You must also comply with your institution's IRB and privacy rules.
+
+## Technical considerations, continued
+
+#### Design
+
+-   If you are developing a user-facing application, consider a [human-centered design](https://en.wikipedia.org/wiki/Human-centered_design) approach to help ensure good user experience.
+-   More: <https://www.fastcompany.com/90772846/human-centered-design>
+
+# 1.3 Example CDS System
+
+## Example CDS system architecture
+
+![Diagram of example CDS system architecture used for this workshop.](assets/cds_architecture.png)
+
+## Demo
+
+-   The demo is using this Docker Compose setup:\
+    <https://github.com/NIH-NEI/fhir-for-research-smart-example>
+
+    -   [`compose.yaml`](https://github.com/NIH-NEI/fhir-for-research-smart-example/blob/main/compose.yaml){preview-link="false"} defines the 5 components from the previous slide
+
+-   I have this running on `localhost`:
+
+    -   HAPI server: [http://localhost:8080](http://localhost:8080/hapi-fhir-jpaserver/fhir/Patient)
+
+    -   Launch simulator: [http://localhost:8010](http://localhost:8010/?launch=WzAsIjYwMTUiLCI3NzYiLCJNQU5VQUwiLDAsMCwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMV0&launch_url=http%3A%2F%2Flocalhost%3A3000%2Flaunch.html){preview-link="false"}
+
+    -   CDS back-end server (Python): `http://localhost:8081`
+
+    -   Example PACS sever: `http://localhost:8082`
+
+    -   User interface (JavaScript): `http://localhost:3000`
+
+::: notes
+If you want to run this yourself, you will need to follow the instructions to start all the Docker containers before the `http://localhost` links will work for you.
+
+The ports (e.g., `8080`) are defined by the Docker Compose file.
+:::
+
+## ➡️ End of Part 1 / Break
+
+<br>
+
+-   If you are not coming back after the break:
+
+    -   [**Please fill out the survey:**]{style="color: red"}
+
+        -   <https://forms.office.com/g/pBhCxFxtpw>
+
+    -   **Save these links:**
+
+        -   Workshop materials: <https://github.com/NIH-NEI/fhir-for-research-workshop>
+
+        -   More on FHIR for Research: <http://purl.org/fhir-for-research/web>
+
+        -   Contact us: `neiodshi@nei.nih.gov`
+
+<small>[⏰](https://timer.masnick.org/#5,0)</small>
+
+# 2.1 Example CDS System Deep Dive
+
+## Example CDS system architecture
+
+![Diagram of example CDS system architecture used for this workshop.](assets/cds_architecture.png){alt="Diagram of example CDS system architecture used for this workshop."}
+
+Our version of this defined by [`compose.yaml`](https://github.com/NIH-NEI/fhir-for-research-smart-example/blob/main/compose.yaml){preview-link="false"}, and that GitHub repository also contains code for the example front-end UI, CDS back-end server, and PACS mock-up.
+
+# 2.2 SMART on FHIR Deep Dive
+
+## SMART App Launch workflow
+
+-   Described in detail in the [SMART App Launch spec](http://www.hl7.org/fhir/smart-app-launch/app-launch.html#top-level-steps-for-smart-app-launch)
+-   Sequence diagram specific to this example on next slide
+-   We use a locally running version of <https://launch.smarthealthit.org> to simulate EHR launch
+    -   Source code: <https://github.com/smart-on-fhir/smart-launcher-v2/>
+
+## SMART on FHIR example sequence diagram
+
+![Sequence diagram of SMART on FHIR log-in/permissions workflow as implemented in the example for this workshop.](assets/smart_on_fhir.svg)
+
+## Example CDS structure
+
+``` ascii
+example_ui/
+     |
+     +--- launch.html
+     |
+     +--- index.html
+```
+
+Available on GitHub: [https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_ui](https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_ui){preview-link="false"}
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+### Step 1. EHR Launch Simulator triggers a SMART App Launch
+
+Your browser (a client) gets redirected by the EHR to your app's <http://localhost:3000/launch.html> with the following parameters:
+
+-   `iss`: Identifies the EHR's endpoint for the app
+-   `launch`: An opaque identifier for this specific app launch and EHR context, required for security purposes
+    -   JavaScript library automatically passes this back to EHR with authorization request (Step 2)
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+### Step 2. The example app's `launch.html` executes a log-in (authorization) request with select parameters
+
+-   We are using the [SMART on FHIR JavaScript Library](https://docs.smarthealthit.org/client-js/) from SMART Health IT
+-   This library handles the OAuth2 workflow and making authenticated requests from the FHIR server
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+### Step 2. The example app's `launch.html` executes a log-in (authorization) request with select parameters
+
+``` {.javascript code-line-numbers="2"}
+<script>
+    FHIR.oauth2.authorize({
+
+      // The client_id that you should have obtained after registering a client at
+      // the EHR.
+      //
+      // Note that this can be an arbitrary string when testing with
+      // http://launch.smarthealthit.org.
+      clientId: "my_web_app",
+
+      // The scopes that you request from the EHR. In this case we want to:
+      // launch            - Get the launch context
+      // openid & fhirUser - Get the current user
+      // patient/*.read    - Read patient data
+      scope: "launch openid fhirUser patient/*.read",
+
+      // Typically, if your redirectUri points to the root of the current directory
+      // (where the launchUri is), you can omit this option because the default value is
+      // ".". However, some servers do not support directory indexes so "." and "./"
+      // will not automatically map to the "index.html" file in that directory.
+      redirectUri: "index.html"
+    });
+</script>
+```
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+The `clientId` parameter is a specific string obtained after registering the app in the EHR manually. You would replace `"my_web_app"` with a specific app identifier for a production implementation.
+
+``` {.javascript code-line-numbers="4-9"}
+<script>
+    FHIR.oauth2.authorize({
+
+      // The client_id that you should have obtained after registering a client at
+      // the EHR.
+      //
+      // Note that this can be an arbitrary string when testing with
+      // http://launch.smarthealthit.org.
+      clientId: "my_web_app",
+
+      // The scopes that you request from the EHR. In this case we want to:
+      // launch            - Get the launch context
+      // openid & fhirUser - Get the current user
+      // patient/*.read    - Read patient data
+      scope: "launch openid fhirUser patient/*.read",
+
+      // Typically, if your redirectUri points to the root of the current directory
+      // (where the launchUri is), you can omit this option because the default value is
+      // ".". However, some servers do not support directory indexes so "." and "./"
+      // will not automatically map to the "index.html" file in that directory.
+      redirectUri: "index.html"
+    });
+</script>
+```
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+The `scope` parameter specifies what kinds of data the app needs access to. See [SMART on FHIR scope and lunch context](https://hl7.org/fhir/smart-app-launch/STU2/scopes-and-launch-context.html) for more data access options.
+
+``` {.javascript code-line-numbers="11-16"}
+<script>
+    FHIR.oauth2.authorize({
+
+      // The client_id that you should have obtained after registering a client at
+      // the EHR.
+      //
+      // Note that this can be an arbitrary string when testing with
+      // http://launch.smarthealthit.org.
+      clientId: "my_web_app",
+
+      // The scopes that you request from the EHR. In this case we want to:
+      // launch            - Get the launch context
+      // openid & fhirUser - Get the current user
+      // patient/*.read    - Read patient data
+      scope: "launch openid fhirUser patient/*.read",
+
+      // Typically, if your redirectUri points to the root of the current directory
+      // (where the launchUri is), you can omit this option because the default value is
+      // ".". However, some servers do not support directory indexes so "." and "./"
+      // will not automatically map to the "index.html" file in that directory.
+      redirectUri: "index.html"
+    });
+</script>
+```
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+`redirectUri` is where the EHR will redirect the web browser (client) to after authorization. In this case it is the app's `index.html`.
+
+``` {.javascript code-line-numbers="17-22"}
+<script>
+    FHIR.oauth2.authorize({
+
+      // The client_id that you should have obtained after registering a client at
+      // the EHR.
+      //
+      // Note that this can be an arbitrary string when testing with
+      // http://launch.smarthealthit.org.
+      clientId: "my_web_app",
+
+      // The scopes that you request from the EHR. In this case we want to:
+      // launch            - Get the launch context
+      // openid & fhirUser - Get the current user
+      // patient/*.read    - Read patient data
+      scope: "launch openid fhirUser patient/*.read",
+
+      // Typically, if your redirectUri points to the root of the current directory
+      // (where the launchUri is), you can omit this option because the default value is
+      // ".". However, some servers do not support directory indexes so "." and "./"
+      // will not automatically map to the "index.html" file in that directory.
+      redirectUri: "index.html"
+    });
+</script>
+```
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+### Step 3. The EHR securely authorizes (or rejects) your log-in request.
+
+<br />
+
+The EHR launch simulator has us select an encounter, which may be skipped in a production implementation.
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+### Step 4. Your web browser gets redirected to the app's `index.html`
+
+As specified earlier in the `redirectUri` parameter.
+
+------------------------------------------------------------------------
+
+**SMART on FHIR walkthrough**
+
+### Step 5. The app obtains an access token via `FHIR.oauth2.ready()`
+
+This access token gets embedded in a `client` object to log in (authenticate) and use the established permissions (authorization) future FHIR queries.
+
+``` {.javascript code-line-numbers="3-4"}
+<script type="text/javascript">
+    ...
+    var client = await FHIR.oauth2.ready();
+    var patient = await client.patient.read();
+    ...
+</script>
+```
+
+## The demo, once more:
+
+-   [http://localhost:8010](http://localhost:8010/?launch=WzAsIjYwMTUiLCI3NzYiLCJNQU5VQUwiLDAsMCwwLCIiLCIiLCIiLCIiLCIiLCIiLCIiLDAsMV0&launch_url=http%3A%2F%2Flocalhost%3A3000%2Flaunch.html){preview-link="false"}
+
+# 2.3 Reading the FHIR Specification & IGs
+
+## The FHIR Specification
+
+-   <https://hl7.org/fhir/>
+
+    -   There are multiple versions: R5 is the current published version; our synthetic data uses R4
+
+-   <https://hl7.org/fhir/resourcelist.html> lists the FHIR resources
+
+-   [https://hl7.org/fhir/patient.html#resource](https://hl7.org/fhir/patient.html#resource){preview-link="false"} shows the data elements in the Patient resource
+
+## FHIR Implementation Guides (IGs)
+
+-   **Example:** US Core is the FHIR implementation of [U.S. Core Data for Interoperability (USCDI)](https://www.healthit.gov/isa/united-states-core-data-interoperability-uscdi)
+    -   Conformance to US Core is part of ONC's EHR certification program, so adoption is wide-spread in production EHRs
+    -   Review the spec to understand available data elements: <https://www.hl7.org/fhir/us/core/>
+-   How to read FHIR specs: <https://purl.org/fhir-for-research/data-modeling-reading-igs>
+
+## ➡️ End of Part 2 / Break
+
+<br>
+
+-   If you are not coming back after the break:
+
+    -   [**Please fill out the survey:**]{style="color: red"}
+
+        -   <https://forms.office.com/g/pBhCxFxtpw>
+
+    -   **Save these links:**
+
+        -   Workshop materials: <https://github.com/NIH-NEI/fhir-for-research-workshop>
+
+        -   More on FHIR for Research: <http://purl.org/fhir-for-research/web>
+
+        -   Contact us: `neiodshi@nei.nih.gov`
+
+------------------------------------------------------------------------
+
+### 5 minute break
+
+### + 10 minutes of setup support
+
+[https://github.com/NIH-NEI/fhir-for-research-workshop/](https://github.com/NIH-NEI/fhir-for-research-workshop/){preview-link="false"}
+
+<br><br><br>
+
+<small>[⏰](https://timer.masnick.org/#15,10){preview-link="false"}</small>
+
+# 3.1 The FHIR API
+
+## FHIR API basics
+
+-   Generally speaking the pattern for a RESTful GET query appended to a URL will take the form of:
+
+    `VERB [base]/[Resource] {?param=[value]}`
+
+-   Spec: <https://hl7.org/fhir/http.html>
+
+## Aside: utility of open endpoint + synthetic data
+
+::: r-fit-text
+-   Real-world FHIR servers will require authentication/authorization
+    -   Handled by the [fhirclient](https://github.com/smart-on-fhir/client-js) library in our example
+-   But it can be helpful to have an open testing server (with synthetic data only!)
+    -   Synthetic data
+        -   [Synthea](https://purl.org/fhir-for-research/synthea)
+        -   Synthea + eye data
+        -   <https://synthetichealth.github.io/spt/#/record_viewer>
+    -   [Public test FHIR servers](https://confluence.hl7.org/display/FHIR/Public+Test+Servers)
+        -   e.g., [`http://hapi.fhir.org/baseR4`](http://hapi.fhir.org/baseR4)
+:::
+
+## FHIR API - getting more data
+
+-   FHIR breaks up health information into chunks of data (**resources**) which are connected together via references
+    -   More information: <https://purl.org/fhir-for-research/key-fhir-resources>
+    -   List of all resources: <https://www.hl7.org/fhir/resourcelist.html>
+-   `GET [base]/Patient/1234` retrieves an **instance** of the [Patient](https://www.hl7.org/fhir/patient.html) resource
+    -   Example: [`http://hapi.fhir.org/baseR4/Patient/44728118`](http://hapi.fhir.org/baseR4/Patient/44728118){preview-link="false"}
+
+::: notes
+If [`http://hapi.fhir.org/baseR4/Patient/44728118`](http://hapi.fhir.org/baseR4/Patient/44728118){preview-link="false"} does not work, open [`http://hapi.fhir.org/baseR4/Patient`](http://hapi.fhir.org/baseR4/Patient) to find an arbitrary patient id, and replace the number in the URL with that id.
+:::
+
+## FHIR API - getting more data
+
+-   [MedicationRequest](https://www.hl7.org/fhir/medicationrequest.html) has medication information, and is connected to Patient via `MedicationRequest.subject`
+-   `GET [base]/MedicationRequest?subject=1234` will get the instances of MedicationRequest for `Patient/1234`
+    -   Example: [`http://hapi.fhir.org/baseR4/MedicationRequest?subject=44728118`](http://hapi.fhir.org/baseR4/MedicationRequest?subject=44728118)
+-   Results are returned in an instance of [Bundle](https://www.hl7.org/fhir/bundle.html)
+
+## FHIR API - chaining
+
+::: r-fit-text
+-   `MedicationRequest.subject` has a reference back to Patient, allowing us to retrieve instances if we know the patient's ID
+-   What if you only know the patient's last name?
+    -   We could do **two queries**: one to get the ID with `GET [base]/Patient?name=peter`, and then a second to get the MedicationRequests for patients with that ID
+    -   The FHIR API supports **just one query**: `GET [base]/MedicationRequest?subject.name=peter`
+    -   Note that `MedicationRequest.subject` [can be either a Patient or Group](https://www.hl7.org/fhir/medicationrequest.html){preview-link="false"}, so this is better: `GET [base]/MedicationRequest?subject:Patient.name=peter`
+:::
+
+## FHIR API - reverse chaining
+
+::: r-fit-text
+**What about "patients diagnosed with a given condition"?**
+
+-   The [Condition](https://www.hl7.org/fhir/condition.html) resource references a Patient (or Group) in `Condition.subject`
+-   The `_has` parameter supports retrieving Patients based on a value from a Condition
+    -   `:` separates fields
+    -   Sub-parameters:
+        -   The resource type to search for references back from (`Condition`)
+        -   The field on that resource which would link back to the current resource (`subject`)
+        -   A field on that resource to filter by (`code`, which Condition uses to identify the condition)
+-   Example: `GET [base]/Patient?_has:Condition:subject:code=195662009`
+:::
+
+## FHIR API - chaining documentation
+
+<https://hl7.org/fhir/search.html#chaining>
+
+## FHIR API - searching multiple values
+
+-   Logical `AND` to find `john smith`: `GET [base]/Patient?given=john&family=smith`
+-   Logical `OR` to find `john smith` or `jenny smith`: `GET [base]/Patient?given=john,jenny&family=smith`
+-   *Lots* more in the spec: <https://hl7.org/fhir/search.html#combining>
+
+# 3.2 FHIRPath
+
+## FHIRPath
+
+-   <http://hl7.org/fhirpath/>:
+
+    > FHIRPath is a path based navigation and extraction language, somewhat like XPath
+
+-   Useful for extracting data from FHIR's deeply nested data structure
+
+-   JavaScript implementation: <https://github.com/HL7/fhirpath.js>
+
+    -   Sandbox: <https://hl7.github.io/fhirpath.js/>
+        -   ️*Not for use with real patient data!*
+
+## FHIRPath examples
+
+Try in the sandbox: <https://hl7.github.io/fhirpath.js/>
+
+-   Get the value from `Patient.gender`: `Patient.gender`
+
+-   Get a patient's legal last name: `Patient.name.where(use='official').family`
+
+-   Get a patient's MRN:
+
+    ```         
+    Patient.identifier.where(type.coding.system = 'http://hl7.org/fhir/v2/0203' and type.coding.code = 'MR').value
+    ```
+
+# 3.3 Hands-on with Python
+
+------------------------------------------------------------------------
+
+[https://github.com/NIH-NEI/fhir-for-research-workshop/](https://github.com/NIH-NEI/fhir-for-research-workshop/){preview-link="false"}
+
+# Wrap-up
+
+------------------------------------------------------------------------
+
+-   [**Please fill out the survey:**]{style="color: red"}
+
+    -   <https://forms.office.com/g/pBhCxFxtpw>
+
+-   **Save these links:**
+
+    -   Workshop materials: <https://github.com/NIH-NEI/fhir-for-research-workshop>
+
+    -   More on FHIR for Research: <http://purl.org/fhir-for-research/web>
+
+    -   Contact us: `neiodshi@nei.nih.gov`
+
+## 
