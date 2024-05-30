@@ -10,6 +10,7 @@ The files in this repository support the May 2024 NEI/ODSHI FHIR for Eye Health 
 - Sample SMART on FHIR CDS architecture: <https://github.com/NIH-NEI/fhir-for-research-smart-example>
     - [Synthetic FHIR data](https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/synthetic_data)
     - [Synthetic OCT and fundus images](https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_pacs/images)
+- [Previous FHIR for Eye Health Research webinar](https://figshare.com/projects/Introduction_to_FHIR_for_Eye_Research/195107)
 
 ----
 
