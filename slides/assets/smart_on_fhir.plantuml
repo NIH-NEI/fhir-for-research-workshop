@@ -11,6 +11,8 @@ B -> B: EHR simulator: select encounter
 B -> C: Log-in completed
 C -> B: Access token request (defines permissions/authorization)
 B --> C: Access token response
-C -> D: Request Patient
-D --> C: Response with Patient JSON
+C -> B: Request Patient
+B -> D: Proxy request Patient to FHIR sever
+D --> B: Patient data response (JSON)
+B --> C: Proxy patient data response (JSON)
 @enduml

@@ -52,6 +52,7 @@ May 30, 2024 <br><br><br>
 1.  Example clinical decision support system
 2.  SMART on FHIR log-in and permissions (authentication and authorization) workflow
 3.  Reading the FHIR specification and FHIR IGs
+4.  Synthetic data
 
 **Part 3: Hands-on with...**
 
@@ -81,9 +82,9 @@ Standards establish a common language and process for all health information tec
 
 ## Real world examples of FHIR
 
--   [Apple Health](https://www.apple.com/healthcare/health-records/) and patient portals
+-   [Apple Health](https://www.apple.com/healthcare/health-records/){preview-link="false"} and patient portals
 -   [SMART Health Cards](https://smarthealth.cards/en/)
--   [Health information exchange networks](https://www.aha.org/news/headline/2024-04-22-onc-requires-health-information-exchange-networks-support-fhir-standard) under TEFCA
+-   [Health information exchange networks](https://www.aha.org/news/headline/2024-04-22-onc-requires-health-information-exchange-networks-support-fhir-standard){preview-link="false"} under TEFCA
 
 ## What characteristics of FHIR support its broad implementation?
 
@@ -102,7 +103,7 @@ Standards establish a common language and process for all health information tec
 
     -   [Standard API](https://www.hl7.org/fhir/http.html)
 
--   [Software libraries](https://confluence.hl7.org/display/FHIR/Open+Source+Implementations)
+-   [Software libraries](https://confluence.hl7.org/display/FHIR/Open+Source+Implementations){preview-link="false"}
 
 -   [HL7](https://hl7.org) and the FHIR Community (e.g., [chat.fhir.org](https://chat.fhir.org))
 
@@ -191,14 +192,14 @@ SMART on FHIR lets you:
 -   Integrate with an EHR (e.g., add an AI-driven CDS app)
 -   Add patient-generated data to an EHR workflow
 -   Create an app that can be used across institutions and EHR products ("write once, use everywhere")
--   Access [Bulk Data](../bulk-data/index.html)
+-   Access [Bulk Data](https://hl7.org/fhir/uv/bulkdata/)
 
 ## SMART on FHIR standards
 
 It ties together existing common web standards and HL7 specifications to enable secure EHR integration:
 
--   OAuth2 for authorizing a third-party app ("logging in")
--   OpenID Connect for authenticating a patient or provider ("permissions")
+-   OAuth2 for authorizing a third-party app ("permissions")
+-   OpenID Connect for authenticating a patient or provider ("logging in")
 -   HL7 FHIR for data modeling and API
 -   JSON for the data format
 -   [HL7.FHIR.UV.SMART-APP-LAUNCH](http://hl7.org/fhir/smart-app-launch/) standard for launching from EHR
@@ -244,6 +245,7 @@ It ties together existing common web standards and HL7 specifications to enable 
 
 ## Demo
 
+::: r-fit-text
 -   The demo is using this Docker Compose setup:\
     <https://github.com/NIH-NEI/fhir-for-research-smart-example>
 
@@ -260,6 +262,7 @@ It ties together existing common web standards and HL7 specifications to enable 
     -   Example PACS sever: `http://localhost:8082`
 
     -   User interface (JavaScript): `http://localhost:3000`
+:::
 
 ::: notes
 If you want to run this yourself, you will need to follow the instructions to start all the Docker containers before the `http://localhost` links will work for you.
@@ -291,7 +294,7 @@ The ports (e.g., `8080`) are defined by the Docker Compose file.
 
 ## Example CDS system architecture
 
-![Diagram of example CDS system architecture used for this workshop.](assets/cds_architecture.png){alt="Diagram of example CDS system architecture used for this workshop."}
+![Diagram of example CDS system architecture used for this workshop.](assets/cds_architecture.png)
 
 Our version of this defined by [`compose.yaml`](https://github.com/NIH-NEI/fhir-for-research-smart-example/blob/main/compose.yaml){preview-link="false"}, and that GitHub repository also contains code for the example front-end UI, CDS back-end server, and PACS mock-up.
 
@@ -318,7 +321,7 @@ example_ui/
      +--- index.html
 ```
 
-Available on GitHub: [https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_ui](https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_ui){preview-link="false"}
+Available on GitHub: <https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_ui>
 
 ------------------------------------------------------------------------
 
@@ -336,16 +339,16 @@ Your browser (a client) gets redirected by the EHR to your app's <http://localho
 
 **SMART on FHIR walkthrough**
 
-### Step 2. The example app's `launch.html` executes a log-in (authorization) request with select parameters
+### Step 2. The example app's `launch.html` executes an authorization request with select parameters
 
 -   We are using the [SMART on FHIR JavaScript Library](https://docs.smarthealthit.org/client-js/) from SMART Health IT
--   This library handles the OAuth2 workflow and making authenticated requests from the FHIR server
+-   This library handles the OAuth2 workflow and making authenticated requests to the FHIR server
 
 ------------------------------------------------------------------------
 
 **SMART on FHIR walkthrough**
 
-### Step 2. The example app's `launch.html` executes a log-in (authorization) request with select parameters
+### Step 2. The example app's `launch.html` executes an authorization request with select parameters
 
 ``` {.javascript code-line-numbers="2"}
 <script>
@@ -527,6 +530,18 @@ This access token gets embedded in a `client` object to log in (authenticate) an
     -   Review the spec to understand available data elements: <https://www.hl7.org/fhir/us/core/>
 -   How to read FHIR specs: <https://purl.org/fhir-for-research/data-modeling-reading-igs>
 
+# 2.4 Synthetic data
+
+## Ophthalmology Synthetic data
+
+-   FHIR format (with embedded images): <https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/synthetic_data>
+
+    -   Separate images: <https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/example_pacs/images>
+
+-   Based on Synthea (<https://synthea.mitre.org>): general purpose open source synthetic health data
+
+    -   FHIR viewer tool: <https://synthetichealth.github.io/spt/#/record_viewer>
+
 ## ➡️ End of Part 2 / Break
 
 <br>
@@ -575,7 +590,7 @@ This access token gets embedded in a `client` object to log in (authenticate) an
 -   But it can be helpful to have an open testing server (with synthetic data only!)
     -   Synthetic data
         -   [Synthea](https://purl.org/fhir-for-research/synthea)
-        -   Synthea + eye data
+        -   [Synthea + eye data](https://github.com/NIH-NEI/fhir-for-research-smart-example/tree/main/synthetic_data)
         -   <https://synthetichealth.github.io/spt/#/record_viewer>
     -   [Public test FHIR servers](https://confluence.hl7.org/display/FHIR/Public+Test+Servers)
         -   e.g., [`http://hapi.fhir.org/baseR4`](http://hapi.fhir.org/baseR4)
