@@ -1,0 +1,13 @@
+"""
+1. What [FHIR resource](http://hl7.org/fhir/R4/resourcelist.html) represents a visual acuity exam?
+
+    Procedure
+
+2. What data element in that resource identifies it as a visual acuity exam?
+
+    Procedure.code
+
+3. What code system and code indicate a visual acuity exam?
+
+    SNOMED CT code 16830007: https://lookup.snomedtools.org/16830007
+"""

@@ -1,0 +1,11 @@
+"""
+1. What data elements in the Patient resource can be used to identify a patient?
+
+    Patient.identifier may work if it's not EHR-specific (e.g., SSN)
+
+    Patient.name can also be searched, along with other potential static identifiers like date of birth
+
+2. What FHIR search strategy can be used to query the 2nd FHIR server for this information?
+
+    Searching for `identifier=...`, or searching with multiple values (name, date of birth, etc) - see https://hl7.org/fhir/search.html#multivalue.
+"""
